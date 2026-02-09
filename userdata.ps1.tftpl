@@ -1,0 +1,27 @@
+<powershell>
+# Set timezone
+tzutil /s "${timezone}"
+
+# Enable Windows Update
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" `
+ /v AUOptions /t REG_DWORD /d 4 /f
+
+# Enable Microsoft Defender
+Set-MpPreference -DisableRealtimeMonitoring $false
+Update-MpSignature
+
+# Enable Firewall (all profiles)
+Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
+
+# Create custom local admin
+$Password = ConvertTo-SecureString "${local_admin_pass}" -AsPlainText -Force
+New-LocalUser "${local_admin_user}" -Password $Password -FullName "Local Admin"
+Add-LocalGroupMember -Group "Administrators" -Member "${local_admin_user}"
+
+# Disable built-in Administrator
+Disable-LocalUser -Name "Administrator"
+
+# Ensure SSM Agent is running
+Set-Service AmazonSSMAgent -StartupType Automatic
+Start-Service AmazonSSMAgent
+</powershell>
